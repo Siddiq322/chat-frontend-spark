@@ -43,6 +43,17 @@ export default function Register() {
       return;
     }
 
+    // Check for valid username format (letters, numbers, underscore only - no spaces)
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(formData.username)) {
+      toast({
+        title: "Invalid Username",
+        description: "Username can only contain letters, numbers, and underscores (no spaces)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (formData.password.length < 6) {
       toast({
         title: "Error",
@@ -98,7 +109,7 @@ export default function Register() {
             <Input
               id="username"
               type="text"
-              placeholder="Choose a username"
+              placeholder="Choose a username (no spaces)"
               value={formData.username}
               onChange={(e) =>
                 setFormData({ ...formData, username: e.target.value })
@@ -109,6 +120,9 @@ export default function Register() {
               maxLength={30}
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            Letters, numbers, and underscores only (e.g., Sana_kousar)
+          </p>
         </div>
 
         <div className="space-y-2">
