@@ -96,7 +96,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Register function
   const register = async (username: string, email: string, password: string) => {
     try {
+      console.log('📝 Attempting registration:', { username, email });
       const response = await chatApi.register(username, email, password);
+      console.log('📬 Registration response:', response);
+      
       if (response.success) {
         const { user, token } = response.data;
         setUser(user);
@@ -108,10 +111,18 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         return { success: true, data: response.data };
       }
-      return response;
+      
+      // Return error message from backend
+      return { 
+        success: false, 
+        message: response.message || response.error || 'Registration failed' 
+      };
     } catch (error: any) {
-      console.error('Register error:', error);
-      return { success: false, message: error.message || 'Registration failed' };
+      console.error('❌ Register error:', error);
+      return { 
+        success: false, 
+        message: error.response?.data?.message || error.message || 'Registration failed. Please try again.' 
+      };
     }
   };
 

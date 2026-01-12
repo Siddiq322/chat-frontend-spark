@@ -23,10 +23,42 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!formData.username || !formData.email || !formData.password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.username.length < 3) {
+      toast({
+        title: "Error",
+        description: "Username must be at least 3 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     
     try {
+      console.log('🚀 Submitting registration...');
       const result = await register(formData.username, formData.email, formData.password);
+      
+      console.log('📦 Registration result:', result);
       
       if (result.success) {
         toast({
@@ -36,15 +68,16 @@ export default function Register() {
         navigate("/dashboard");
       } else {
         toast({
-          title: "Error",
-          description: result.message || "Registration failed",
+          title: "Registration Failed",
+          description: result.message || "Unable to create account. Please try again.",
           variant: "destructive",
         });
       }
     } catch (error: any) {
+      console.error('❌ Registration error:', error);
       toast({
         title: "Error",
-        description: error.message || "Registration failed",
+        description: error.message || "Network error. Please check your connection.",
         variant: "destructive",
       });
     } finally {
@@ -71,6 +104,9 @@ export default function Register() {
                 setFormData({ ...formData, username: e.target.value })
               }
               className="pl-10 h-11 rounded-xl"
+              required
+              minLength={3}
+              maxLength={30}
             />
           </div>
         </div>
@@ -88,6 +124,7 @@ export default function Register() {
                 setFormData({ ...formData, email: e.target.value })
               }
               className="pl-10 h-11 rounded-xl"
+              required
             />
           </div>
         </div>
@@ -105,6 +142,8 @@ export default function Register() {
                 setFormData({ ...formData, password: e.target.value })
               }
               className="pl-10 pr-10 h-11 rounded-xl"
+              required
+              minLength={6}
             />
             <button
               type="button"
