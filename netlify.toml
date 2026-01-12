@@ -1,0 +1,23 @@
+[build]
+  # Build command for Vite
+  command = "npm run build"
+  
+  # The output directory (Vite builds to 'dist')
+  publish = "dist"
+  
+  # Ignore the server folder
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF . ':!server'"
+
+# Redirect all routes to index.html for React Router
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer-when-downgrade"
