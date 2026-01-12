@@ -18,9 +18,18 @@ interface Message {
     username: string;
     email: string;
   };
+  receiver?: string;
   content: string;
   type: "text" | "image" | "gif" | "sticker";
+  status?: "sent" | "delivered" | "read";
+  isDeleted?: boolean;
   createdAt: string;
+  metadata?: {
+    fileName?: string;
+    fileSize?: number;
+    width?: number;
+    height?: number;
+  };
 }
 
 interface Conversation {
@@ -98,6 +107,11 @@ export default function Chat() {
       const convId = msg.conversation || msg.conversationId || payload?.conversationId;
       if (convId === conversationId && msg.sender._id !== user?._id) {
         setMessages((prev) => [...prev, msg]);
+        
+        // Mark message as read immediately
+        if (conversationId) {
+          socketService.markMessageAsRead(conversationId);
+        }
       }
     };
 
@@ -110,12 +124,40 @@ export default function Chat() {
       }
     };
 
+    // Handle message deletion
+    const handleMessageDeleted = (payload: { messageId: string; conversationId: string }) => {
+      if (payload.conversationId === conversationId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === payload.messageId
+              ? { ...msg, isDeleted: true, content: "This message was deleted" }
+              : msg
+          )
+        );
+      }
+    };
+
+    // Handle message status updates
+    const handleStatusUpdate = (payload: { messageId: string; status: string }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === payload.messageId
+            ? { ...msg, status: payload.status as "sent" | "delivered" | "read" }
+            : msg
+        )
+      );
+    };
+
     const offReceive = socketService.onReceiveMessage(handleReceivedMessage);
     const offSent = socketService.onMessageSent(handleSentMessage);
+    const offDeleted = socketService.onMessageDeleted(handleMessageDeleted);
+    const offStatus = socketService.onMessageStatusUpdated(handleStatusUpdate);
 
     return () => {
       offReceive?.();
       offSent?.();
+      offDeleted?.();
+      offStatus?.();
     };
   }, [conversationId, user?._id]);
 
@@ -140,6 +182,23 @@ export default function Chat() {
       toast({
         title: "Error",
         description: "Failed to send message",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      socketService.deleteMessage(messageId);
+      toast({
+        title: "Success",
+        description: "Message deleted",
+      });
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete message",
         variant: "destructive",
       });
     }
@@ -206,11 +265,14 @@ export default function Chat() {
             messages.map((message) => (
               <MessageBubble
                 key={message._id}
+                messageId={message._id}
                 content={message.content}
                 type={message.type}
                 isOutgoing={user?._id === message.sender._id}
                 timestamp={formatTimestamp(message.createdAt)}
-                status="sent"
+                status={message.status || "sent"}
+                isDeleted={message.isDeleted}
+                onDelete={handleDeleteMessage}
               />
             ))
           )}

@@ -205,9 +205,28 @@ export const markMessageRead = (messageId: string) => {
   socket.emit('message_read', { messageId });
 };
 
-export const markConversationRead = (conversationId: string) => {
+export const markMessageAsRead = (conversationId: string) => {
   if (!socket) return;
   socket.emit('message_read', { conversationId });
+};
+
+// ============================================
+// MESSAGE DELETION
+// ============================================
+
+export const deleteMessage = (messageId: string) => {
+  if (!socket) return;
+  socket.emit('delete_message', { messageId });
+};
+
+export const onMessageDeleted = (callback: (data: any) => void) => {
+  listeners.set('message_deleted', callback);
+  if (socket) socket.on('message_deleted', callback);
+  
+  return () => {
+    listeners.delete('message_deleted');
+    socket?.off('message_deleted', callback);
+  };
 };
 
 // ============================================
@@ -261,7 +280,9 @@ export const socketService = {
   onMessageStatusUpdated,
   markMessageDelivered,
   markMessageRead,
-  markConversationRead,
+  markMessageAsRead,
+  deleteMessage,
+  onMessageDeleted,
   onRequestReceived,
   onRequestAccepted,
   notifyRequestSent,
