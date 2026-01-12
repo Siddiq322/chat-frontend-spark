@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - Chat Spark</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #16a085;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #138d75;
+        }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Chat Spark API Test Tool</h1>
+    
+    <div class="test-box">
+        <h3>Environment Check</h3>
+        <div id="env-info"></div>
+    </div>
+
+    <div class="test-box">
+        <h3>Backend Health Check</h3>
+        <button onclick="testBackendHealth()">Test Backend Connection</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h3>Test Login</h3>
+        <input type="email" id="email" placeholder="Email" value="siddiqshaik613@gmail.com" style="width: 100%; padding: 8px; margin: 5px 0;">
+        <input type="password" id="password" placeholder="Password" value="12345678" style="width: 100%; padding: 8px; margin: 5px 0;">
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h3>CORS Test</h3>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <script>
+        // Check environment
+        const API_URL = 'https://chat-backend-spark.onrender.com/api';
+        const BACKEND_URL = 'https://chat-backend-spark.onrender.com';
+
+        document.getElementById('env-info').innerHTML = `
+            <p class="info"><strong>Frontend URL:</strong> ${window.location.origin}</p>
+            <p class="info"><strong>API URL:</strong> ${API_URL}</p>
+            <p class="info"><strong>Backend URL:</strong> ${BACKEND_URL}</p>
+        `;
+
+        async function testBackendHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '<p class="info">Testing...</p>';
+            
+            try {
+                const response = await fetch(BACKEND_URL + '/');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Backend is reachable!</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">❌ Backend responded but with error</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Failed to connect to backend</p>
+                    <p class="error">Error: ${error.message}</p>
+                    <p class="info">This usually means:</p>
+                    <ul>
+                        <li>Backend is down or sleeping (Render free tier)</li>
+                        <li>CORS is blocking the request</li>
+                        <li>Network/firewall issue</li>
+                    </ul>
+                `;
+            }
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('login-result');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            resultDiv.innerHTML = '<p class="info">Testing login...</p>';
+            
+            try {
+                const response = await fetch(API_URL + '/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Login successful!</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">❌ Login failed (Status: ${response.status})</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <p class="info">This could mean:</p>
+                        <ul>
+                            <li>Wrong email/password</li>
+                            <li>User doesn't exist</li>
+                            <li>Database connection issue</li>
+                        </ul>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Network error</p>
+                    <p class="error">Error: ${error.message}</p>
+                    <p class="info">Check:</p>
+                    <ul>
+                        <li>Is backend URL correct?</li>
+                        <li>Is CORS configured properly?</li>
+                        <li>Is the backend running?</li>
+                        <li>Open browser DevTools Console for more details</li>
+                    </ul>
+                `;
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<p class="info">Testing CORS...</p>';
+            
+            try {
+                const response = await fetch(BACKEND_URL + '/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials'),
+                };
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ CORS request succeeded!</p>
+                    <p><strong>CORS Headers:</strong></p>
+                    <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+                    <p class="info">If Access-Control-Allow-Origin is null, CORS is NOT configured for this origin!</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ CORS test failed</p>
+                    <p class="error">Error: ${error.message}</p>
+                    <p class="info">This means the backend is not allowing requests from: <strong>${window.location.origin}</strong></p>
+                    <p class="info">Fix: Add this URL to CLIENT_URL in Render environment variables</p>
+                `;
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            setTimeout(testBackendHealth, 500);
+        });
+    </script>
+</body>
+</html>
